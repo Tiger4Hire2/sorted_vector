@@ -16,11 +16,11 @@ struct Elem
 
 using MyVector = std::vector<Elem>;
 
-bool Contains( const MyVector& vector, int val)
+bool Contains(const MyVector &vector, int val)
 {
     const auto found = std::lower_bound(vector.begin(), vector.end(), val);
-    return (found!=vector.end()) && 
-            (found->k==val);
+    return (found != vector.end()) &&
+           (found->k == val);
 }
 
 static MyMap CreateMap(int size)
@@ -193,24 +193,15 @@ static void VectorMultiDeleteMagic(benchmark::State &state)
     }
 }
 
-constexpr int MAX = 8;
-BENCHMARK(MapCreation)->RangeMultiplier(2)->Range(1024 * 128, MAX * 1024 * 1024);
-;
-BENCHMARK(VectorCreation)->RangeMultiplier(2)->Range(1024 * 128, MAX * 1024 * 1024);
-;
-BENCHMARK(MapLookup)->RangeMultiplier(2)->Range(1024 * 128, MAX * 1024 * 1024);
-;
-BENCHMARK(VectorLookup)->RangeMultiplier(2)->Range(1024 * 128, MAX * 1024 * 1024);
-;
-BENCHMARK(MapDelete)->RangeMultiplier(2)->Range(1024 * 128, MAX * 1024 * 1024);
-;
-BENCHMARK(VectorDelete)->RangeMultiplier(2)->Range(1024 * 128, MAX * 1024 * 1024);
-;
-BENCHMARK(VectorMultiDelete)->RangeMultiplier(2)->Range(1024 * 128, MAX * 1024 * 1024);
-;
-BENCHMARK(VectorMultiDeleteMagic)->RangeMultiplier(2)->Range(1024 * 128, MAX * 1024 * 1024);
-;
-
+constexpr int MAX = 32;
+BENCHMARK(MapCreation)->RangeMultiplier(2)->Range(1024 * 256, MAX * 1024 * 1024);
+BENCHMARK(VectorCreation)->RangeMultiplier(2)->Range(1024 * 256, MAX * 1024 * 1024);
+BENCHMARK(MapLookup)->RangeMultiplier(2)->Range(1024 * 256, MAX * 1024 * 1024);
+BENCHMARK(VectorLookup)->RangeMultiplier(2)->Range(1024 * 256, MAX * 1024 * 1024);
+BENCHMARK(MapDelete)->RangeMultiplier(2)->Range(1024 * 256, MAX * 1024 * 1024);
+BENCHMARK(VectorDelete)->RangeMultiplier(2)->Range(1024 * 256, MAX * 1024 * 1024);
+BENCHMARK(VectorMultiDelete)->RangeMultiplier(2)->Range(1024 * 256, MAX * 1024 * 1024);
+BENCHMARK(VectorMultiDeleteMagic)->RangeMultiplier(2)->Range(1024 * 256, MAX * 1024 * 1024);
 
 // Module tests section.
 // It doesn't matter how fast it is, if it doesnt work
