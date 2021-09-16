@@ -1,7 +1,7 @@
 # sorted_vector
 Proof Big "O" notation leads to the wrong conclussions sometimes
 
-I will add an openoffice document with my conclusions in, but not yet
+See the open office doc for my ramblings
 
 Building
 ========
