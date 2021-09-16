@@ -13,7 +13,7 @@ Building
  - google benchmark (https://github.com/google/benchmark), cmake based
 
 Once you have the repository and the requirments, you need to initialise tup
-> tup init
+> tup init  
 then build
 > tup
 
