@@ -14,6 +14,7 @@ Building
 
 Once you have the repository and the requirments, you need to initialise tup
 > tup init  
+
 then build
 > tup
 
