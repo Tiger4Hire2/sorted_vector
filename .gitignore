@@ -1,0 +1,5 @@
+dobj/**
+obj/**
+.tup
+*.exe
+perf*
