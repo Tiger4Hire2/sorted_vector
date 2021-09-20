@@ -407,7 +407,7 @@ static void Eval(benchmark::State &state)
     }
 }
 
-template<class T>
+template<class T, bool stack_order>
 static void AddRemove(benchmark::State &state)
 {
     // build a rifle
@@ -425,15 +425,18 @@ static void AddRemove(benchmark::State &state)
         rifle.AddAccessory(&scope);
 
         rifle.RemoveAccessory(&scope);
-//        for (auto& acc: Reverse(bullets))
-        for (auto& acc: bullets)
-            rifle.RemoveAccessory(&acc);   
+        if constexpr (stack_order)
+            for (auto& acc: Reverse(bullets))
+                rifle.RemoveAccessory(&acc);
+        else   
+            for (auto& acc: bullets)
+                rifle.RemoveAccessory(&acc);
         rifle.RemoveAccessory(&he_bullets);   
     }
 }
 
 template<>
-void AddRemove<Modern::Rifle>(benchmark::State &state)
+void AddRemove<Modern::Rifle, true>(benchmark::State &state)
 {
     // build a rifle
     Modern::Rifle rifle;
@@ -473,9 +476,12 @@ static void EvalModern(benchmark::State &state)
     return Eval<Modern::Rifle>(state);
 }
 
-static void AddRemoveSLL(benchmark::State &state) {return AddRemove<SingleLinkedList::Rifle>(state);}
-static void AddRemoveStd(benchmark::State &state) {return AddRemove<StandardLib::Rifle>(state);}
-static void AddRemoveModern(benchmark::State &state) {return AddRemove<Modern::Rifle>(state);}
+static void AddRemoveSLL(benchmark::State &state) {return AddRemove<SingleLinkedList::Rifle, true>(state);}
+static void AddRemoveSLLNotStack(benchmark::State &state) {return AddRemove<SingleLinkedList::Rifle, false>(state);}
+static void AddRemoveStd(benchmark::State &state) {return AddRemove<StandardLib::Rifle, true>(state);}
+static void AddRemoveStdNotStack(benchmark::State &state) {return AddRemove<StandardLib::Rifle, false>(state);}
+static void AddRemoveModernNotStackNotBatch(benchmark::State &state) {return AddRemove<Modern::Rifle, false>(state);}
+static void AddRemoveModern(benchmark::State &state) {return AddRemove<Modern::Rifle, true>(state);}
 
 BENCHMARK(EvalSingleLinkedList);
 BENCHMARK(EvalStandardLib);
@@ -483,3 +489,6 @@ BENCHMARK(EvalModern);
 BENCHMARK(AddRemoveSLL);
 BENCHMARK(AddRemoveStd);
 BENCHMARK(AddRemoveModern);
+BENCHMARK(AddRemoveSLLNotStack);
+BENCHMARK(AddRemoveStdNotStack);
+BENCHMARK(AddRemoveModernNotStackNotBatch);
