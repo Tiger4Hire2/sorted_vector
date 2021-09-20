@@ -32,7 +32,7 @@ I switched to comparing three styles of coding.
 2) STL container based code.
 3) Modern sorted-vector/variant code
 
-
+```
 --------------------------------------------------------------------------
 Benchmark                                Time             CPU   Iterations
 --------------------------------------------------------------------------
@@ -45,6 +45,7 @@ AddRemoveModern                   18336000 ns     18335467 ns           38
 AddRemoveSLLNotStack            7084640026 ns   7084411699 ns            1
 AddRemoveStdNotStack              21107791 ns     21106313 ns           33
 AddRemoveModernNotStackNotBatch 2196139116 ns   2196084652 ns            1
+```
 
 The results show that the old fashioned intrusive (single) list is still reasonable as an iterative computation.
 The intrusive list code is extremely fast when used in stack order (FIFO). It is much easier than most people assume to make code stack-order dependent, but it does require a certain amount of archectual enforcement, which makes it hard to re-engineer older code this way.
