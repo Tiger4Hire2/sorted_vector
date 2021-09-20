@@ -1,7 +1,7 @@
 # sorted_vector
 Proof Big "O" notation leads to the wrong conclussions sometimes
 
-I will add an openoffice document with my conclusions in, but not yet
+See the open office doc for my ramblings
 
 Building
 ========
@@ -13,7 +13,8 @@ Building
  - google benchmark (https://github.com/google/benchmark), cmake based
 
 Once you have the repository and the requirments, you need to initialise tup
-> tup init
+> tup init  
+
 then build
 > tup
 
