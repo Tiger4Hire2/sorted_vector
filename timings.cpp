@@ -25,26 +25,48 @@ bool Contains(const MyVector &vector, int val)
     return found != vector.end();
 }
 
+
+// batch erase a set of pre-found pointers
+static void BatchErase(MyVector &vector, const std::vector<MyVector::iterator>& found_list)
+{
+    assert(std::is_sorted(found_list.begin(), found_list.end()));
+    MyVector::iterator copy_from = found_list[0]+1;
+    MyVector::iterator copy_to = found_list[0];
+    auto next_to_skip = found_list.begin()+1;
+    while (true)
+    {
+        while (next_to_skip!=found_list.end() && *next_to_skip==copy_from)
+        {
+            ++next_to_skip;
+            ++copy_from;
+        }
+        if (copy_from!=vector.end())
+            *copy_to++ = *copy_from++;
+        else break;
+    }
+    vector.resize(vector.size()-found_list.size());
+}
 /*
 BatchDelete: 
  remove a set of elements from a sorted vector as a single op
- relies on fast/stable sort algorithm for performance
+ Uses 
 */
 // Precondition: all elements of selection must exist in vector
 static void BatchDelete(MyVector &vector, std::vector<int> selection)
 {
+    assert(!selection.empty());
     std::sort(selection.begin(), selection.end());
     MyVector::iterator start = vector.begin();
     MyVector::iterator end = vector.end();
+    std::vector<MyVector::iterator> found_list;
+    found_list.reserve(selection.size());
     for (const int rnd : selection)
     {
         const auto found = std::lower_bound(start, end, rnd);
+        found_list.emplace_back(found);
         start = found + 1;
-        end = end - 1;
-        std::swap(*found, *end);
     }
-    vector.resize(vector.size() - selection.size());
-    std::sort(vector.begin(), vector.end());
+    BatchErase(vector, found_list);
 }
 
 static void BatchInsert(MyVector &vector, std::vector<Elem> selection)
@@ -56,24 +78,6 @@ static void BatchInsert(MyVector &vector, std::vector<Elem> selection)
 static void BatchInsertMagic(MyVector &vector, std::vector<Elem> selection)
 {
     vector.insert(vector.end(), selection.begin(), selection.end());
-    std::make_heap(vector.begin(), vector.end());
-    std::sort(vector.begin(), vector.end());
-}
-
-// Precondition: all elements of selection must exist in vector
-static void BatchDeleteWithMagic(MyVector &vector, std::vector<int> selection)
-{
-    std::sort(selection.begin(), selection.end());
-    MyVector::iterator start = vector.begin();
-    MyVector::iterator end = vector.end();
-    for (const int rnd : selection)
-    {
-        const auto found = std::lower_bound(start, end, rnd);
-        start = found + 1;
-        end = end - 1;
-        std::swap(*found, *end);
-    }
-    vector.resize(vector.size() - selection.size());
     std::make_heap(vector.begin(), vector.end());
     std::sort(vector.begin(), vector.end());
 }
@@ -141,12 +145,12 @@ static void VectorCreation(benchmark::State &state)
 
 static void MapLookup(benchmark::State &state)
 {
+    static auto map = CreateMap(state.range(0));
+    if (map.size() != (size_t)state.range(0))
+        map = CreateMap(state.range(0));
+    const auto random_Selection = RandomSelection(state.range(0), 100);
     for (auto _ : state)
     {
-        state.PauseTiming();
-        const auto map = CreateMap(state.range(0));
-        const auto random_Selection = RandomSelection(state.range(0), 100);
-        state.ResumeTiming();
         for (const int rnd : random_Selection)
             benchmark::DoNotOptimize(map.lower_bound(rnd));
     }
@@ -154,12 +158,12 @@ static void MapLookup(benchmark::State &state)
 
 static void VectorLookup(benchmark::State &state)
 {
+    auto vector = CreateVector(state.range(0));
+    if (vector.size() != (size_t)state.range(0))
+        vector = CreateVector(state.range(0));
+    const auto random_Selection = RandomSelection(state.range(0), 100);
     for (auto _ : state)
     {
-        state.PauseTiming();
-        const auto vector = CreateVector(state.range(0));
-        const auto random_Selection = RandomSelection(state.range(0), 100);
-        state.ResumeTiming();
         for (const int rnd : random_Selection)
             benchmark::DoNotOptimize(std::lower_bound(vector.begin(), vector.end(), rnd));
     }
@@ -236,17 +240,6 @@ static void VectorMultiDeleteHalf(benchmark::State &state)
     }
 }
 
-static void VectorMultiDeleteMagic(benchmark::State &state)
-{
-    for (auto _ : state)
-    {
-        state.PauseTiming();
-        auto vector = CreateVector(state.range(0));
-        const auto random_selection = RandomSelection(state.range(0), 100);
-        state.ResumeTiming();
-        BatchDeleteWithMagic(vector, random_selection);
-    }
-}
 
 static void MapInsert(benchmark::State &state)
 {
@@ -349,7 +342,6 @@ BENCHMARK(VectorMultiDelete)->RangeMultiplier(4)->Range(1024 * 256, MAX * 1024 *
 
 BENCHMARK(MapDeleteHalf)->RangeMultiplier(4)->Range(1024 * 256, MAX * 1024 * 1024);
 BENCHMARK(VectorMultiDeleteHalf)->RangeMultiplier(4)->Range(1024 * 256, MAX * 1024 * 1024);
-BENCHMARK(VectorMultiDeleteMagic)->RangeMultiplier(4)->Range(1024 * 256, MAX * 1024 * 1024);
 
 BENCHMARK(MapInsert)->RangeMultiplier(4)->Range(1024 * 256, MAX * 1024 * 1024);
 BENCHMARK(VectorBatchInsert)->RangeMultiplier(4)->Range(1024 * 256, MAX * 1024 * 1024);
@@ -399,6 +391,38 @@ TEST(SortedVector, Delete)
     EXPECT_EQ(vector.size(), 90);
 }
 
+TEST(SortedVector, BatchErase)
+{
+    // delete end
+    {
+        auto vector = CreateVector(5);
+        using DeleteVector = std::vector<MyVector::iterator>;
+        const DeleteVector to_delete= { 
+                                vector.begin(),
+                                vector.begin()+2,
+                                vector.begin()+4 
+                            };
+        BatchErase(vector, to_delete);
+        EXPECT_EQ(vector.size(), 2);
+        EXPECT_EQ(vector[0], 1);
+        EXPECT_EQ(vector[1], 3);
+    }
+    // don't delete end
+    {
+        auto vector = CreateVector(5);
+        using DeleteVector = std::vector<MyVector::iterator>;
+        const DeleteVector to_delete= { 
+                                vector.begin(),
+                                vector.begin()+2,
+                                vector.begin()+3 
+                            };
+        BatchErase(vector, to_delete);
+        EXPECT_EQ(vector.size(), 2);
+        EXPECT_EQ(vector[0], 1);
+        EXPECT_EQ(vector[1], 4);
+    }
+}
+
 TEST(SortedVector, MultiDelete)
 {
     auto vector = CreateVector(100);
@@ -412,17 +436,17 @@ TEST(SortedVector, MultiDelete)
     EXPECT_EQ(vector.size(), 90);
 }
 
-TEST(SortedVector, MagicDelete)
+TEST(SortedVector, MultiDeleteBug)
 {
     auto vector = CreateVector(100);
-    const auto random_selection = RandomSelection(vector.size(), 10);
-    BatchDeleteWithMagic(vector, random_selection);
+    const auto selection = std::vector{1,10,98,99};
+    BatchDelete(vector, selection);
     // check deleted items removed
     EXPECT_TRUE(std::is_sorted(vector.begin(), vector.end()));
-    for (const int rnd : random_selection)
+    for (const int rnd : selection)
         EXPECT_FALSE(Contains(vector, rnd));
     // check size changed
-    EXPECT_EQ(vector.size(), 90);
+    EXPECT_EQ(vector.size(), 96);
 }
 
 TEST(SortedVector, Insert)
